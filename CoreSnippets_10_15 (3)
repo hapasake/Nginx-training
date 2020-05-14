@@ -1,0 +1,494 @@
+Lab 1, Exercise 1
+
+ssh student<#>@<ec
+
+
+Lab 2, Exercise 1
+
+nginx -v
+
+ps aux | grep nginx
+
+cat /var/run/nginx.pid
+
+cd /etc/nginx
+
+ls -F
+
+sudo nginx -t
+
+sudo nginx -T
+
+cat nginx.conf 
+
+
+Lab 3, Exercise 1
+
+cd /etc/nginx/conf.d
+
+cat default.conf
+
+sudo mv default.conf default.conf.bak
+
+sudo vim server1.conf
+
+a
+
+server {
+    listen 80;
+    root /home/ubuntu/public_html;
+}
+
+sudo nginx -t && sudo service nginx reload OR sudo nginx -s reload
+
+curl http://localhost/
+
+ls /home/ubuntu/public_html
+
+cat /home/ubuntu/public_html/index.html
+
+Lab 4, Exercise 1
+
+sudo mv server1.conf server1.old
+
+sudo vim server_test.conf
+
+server {
+    listen 80;
+    return 200 "this server listens on 0.0.0.0:80\n";
+}
+server { 
+    listen 127.0.0.1:80;
+    return 200 "this server listens on 127.0.0.1:80\n";
+}
+
+sudo nginx -t && sudo service nginx reload
+
+curl http://localhost
+
+
+Lab 5, Exercise 1
+
+sudo mv server_test.conf server_test.bak
+
+sudo mv server1.old server1.conf
+
+sudo vim server1.conf
+
+location /application1 {
+}
+
+location /application2 {
+}
+
+location /images {
+    root /data;
+}
+
+sudo nginx -s reload
+
+http://<ec2-name> 
+http://<ec2-name>/application1
+http://<ec2-name>/application2
+http://<ec2-name>/images/logo.png
+
+ls /home/ubuntu/public_html/application1
+
+index app1.html;
+
+index app2.html;
+
+Lab 6, Exercise 1
+
+sudo mv server1.conf server1.old
+
+sudo vim variable_test.conf
+
+server {
+    listen 80;
+    root /home/ubuntu/public_html;
+
+    location / {
+        return 200 "custom variable is $custom_variable \n";
+    }
+
+    location /test1 {
+        set $custom_variable 42;
+        return 200 "custom variable is $custom_variable \n";
+    }
+
+    location /test2 {
+        set $custom_variable "null";
+        return 200 "custom variable is $custom_variable \n";
+    }
+}
+
+sudo nginx -s reload
+
+curl http://localhost/test1
+curl http://localhost/test2 
+curl http://localhost/test
+
+sudo vim variable_test.conf
+
+set $custom_variable 0;
+
+sudo nginx -s reload
+
+curl http://localhost/test1
+curl http://localhost/test2 
+curl http://localhost/test
+
+Lab 7, Exercise 1
+
+sudo mv variable_test.conf variable_test.old
+
+sudo mv server1.old server1.conf
+
+sudo vim server1.conf
+
+error_log /var/log/nginx/server1.error.log info;
+access_log /var/log/nginx/server1.access.log combined;
+
+sudo nginx -s reload
+
+cat /var/log/nginx/server1.access.log
+
+Lab 7, Exercise 2
+
+sudo vim server1.conf
+
+log_format test_log '"Request: $request\n Status: $status\n Request_URI: $request_uri\n Host: $host\n Client_IP: $remote_addr\n Proxy_IP(s): $proxy_add_x_forwarded_for\n Proxy_Hostname: $proxy_host\n Real_IP: $http_x_real_ip"';
+
+test_log
+
+nginx -s reload
+
+cat /var/log/nginx/server1.access.log
+
+
+Lab 8, Exercise 1
+
+sudo vim /etc/nginx/conf.d/server2.conf
+
+server {
+    listen 8080;
+    root /data/server2;
+}
+
+cat /data/server2/sampleApp/index.html
+
+sudo vim server1.conf
+
+proxy_pass http://localhost:8080/sampleApp;
+
+sudo nginx -s reload
+
+
+Lab 9, Exercise 1
+
+sudo vim /etc/nginx/conf.d/server1.conf
+
+#
+
+location ~ ^/pictures/(.+\.(gif|jpe?g|png))$ {
+    alias /data/images/$1;
+}
+
+sudo nginx -s reload
+
+Lab 9, Exercise 2
+
+ls /home/ubuntu/public_html/shop/product
+
+sudo vim /home/ubuntu/public_html/shop/product/product1.html
+
+sudo vim server1.conf
+
+rewrite ^/shop/greatproducts/(\d+)$ /shop/product/product$1.html;
+
+sudo nginx -s reload
+
+http://<ec2-host>/shop/greatproducts/2
+http://<ec2-host>/shop/greatproducts/3
+http://<ec2-host>/shop/greatproducts/1
+
+sudo vim server1.conf
+
+rewrite ^/media/pics/(.+\.(gif|jpe?g|png))$ /pictures/$1;
+
+sudo nginx -s reload
+
+Lab 9, Exercise 3
+
+sudo vim server1.conf
+
+location /shop {
+  rewrite ^/shop/greatproducts/(\d+)$ /shop/product/product$1.html;
+  rewrite ^/shop/.+/(\d+)$ /shop/services/service$1.html;                 
+  return 403;                    
+}
+
+sudo nginx -s reload
+
+break
+
+sudo nginx -s reload
+
+
+Lab 10, Exercise 1
+
+sudo vim server1.conf
+
+map $uri $is_redirect {
+    default     0;
+    /test1       1;
+    /test2       2;
+    /test3       3;
+}
+
+location ~* /test(\d+)$ {
+        return 200 "variable = $is_redirect \n";
+    }
+
+sudo nginx -s reload
+
+curl -k http://localhost/test1
+
+curl -k http://localhost/test2
+curl -k http://localhost/test3
+curl -k http://localhost/test4
+curl -k http://localhost/test4241234
+
+Lab 10, Exercise 2
+
+sudo vim server1.conf
+
+map $status $loggable {
+    ~^[23]     0;
+    default    1;
+}
+
+if=$loggable
+
+sudo nginx -s reload
+
+curl http://localhost/
+curl http://localhost/nowhere/
+
+sudo cat /var/log/nginx/server1.access.log
+
+Lab 11, Exercise 1
+
+sudo vim backends.conf
+
+server {
+    listen 8081;
+    root /data/backend1;
+}
+
+server {
+    listen 8082;
+    root /data/backend2;
+}
+
+server {
+    listen 8083;
+    root /data/backend3;
+}
+
+sudo nginx -s reload
+
+curl http://localhost:8081
+curl http://localhost:8082
+curl http://localhost:8083
+
+sudo mv server1.conf server1.conf.bak
+sudo mv server2.conf server2.conf.bak
+
+sudo vim myServers.conf
+
+upstream myServers {
+    server 127.0.0.1:8081;
+    server 127.0.0.1:8082;
+    server 127.0.0.1:8083;
+}
+
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    error_log /var/log/nginx/upstream.error.log info;
+    access_log /var/log/nginx/upstream.access.log combined;
+
+    location / {
+        proxy_pass http://myServers;
+    }
+}
+
+sudo nginx -s reload
+
+curl http://localhost/
+
+sudo vim myServers.conf
+
+weight=2;
+
+sudo nginx -s reload
+
+curl http://localhost/
+
+Lab 11, Exercise 2
+
+sudo vim myServers.conf
+
+hash $scheme$host$request_uri;
+
+sudo nginx -s reload
+
+curl http://localhost/?1
+curl http://localhost/?2
+
+
+Lab 12, Exercise 1
+
+sudo vim myServers.conf
+
+#
+
+zone http_backend 64k;
+
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+
+    location /api {
+        api;
+    }
+
+    location /dashboard.html {
+    }
+}
+
+sudo nginx -s reload
+
+Lab 12, Exercise 2
+
+sudo vim backends.conf
+
+status_zone USA;
+status_zone Europe;
+
+sudo nginx -s reload
+
+Lab 12, Exercise 3
+
+sudo vim myServers.conf
+
+write=on
+
+sudo nginx -s reload
+
+curl -X DELETE "http://localhost:8080/api/3/http/upstreams/myServers/servers/2" \
+-H "accept: application/json" | jq
+
+sudo nginx -s reload
+
+curl -X POST "http://localhost:8080/api/3/http/upstreams/myServers/servers/" \
+-H "accept: application/json" \
+-H "Content-Type: application/json" \
+-d "{ \"server\": \"127.0.0.1:8083\", \"weight\": \"5\"}" \
+| jq
+
+Lab 12, Exercise 4
+
+sudo mkdir -p /var/lib/nginx/state
+
+sudo chown nginx:nginx /var/lib/nginx/state
+
+sudo vim myServers.conf
+
+state /var/lib/nginx/state/http_backend.state;
+
+#
+
+sudo nginx -s reload
+
+curl -X POST "http://localhost:8080/api/3/http/upstreams/myServers/servers/" \
+-H "accept: application/json" \
+-H "Content-Type: application/json" \
+-d "{ \"server\": \"127.0.0.1:8081\", \"weight\": \"4\"}" \
+| jq
+
+sudo nginx -s reload
+
+
+Lab 13, Exercise 1
+
+sudo vim myServers.conf
+
+match health_conditions {
+    status 200;
+    header Content-Type = text/html;
+    body !~ maintenance;
+}
+
+health_check match=health_conditions fails=2 uri=/health/test.html;
+
+sudo nginx -s reload
+
+sudo vim /data/backend3/health/test.html
+
+Lab 14, Exercise 1
+
+sudo vim myServers.conf
+
+proxy_cache_path /data/nginx/cache levels=1:2 keys_zone=upstream_cache:20m inactive=5m max_size=2G;
+
+proxy_cache_key $scheme$host$request_uri;
+add_header X-Proxy-Cache $upstream_cache_status;
+
+proxy_cache upstream_cache;
+proxy_cache_valid 200 5m;
+
+sudo nginx -s reload
+
+curl -I http://localhost/
+
+
+Lab 15, Exercise 1
+
+sudo mkdir /etc/nginx/ssl -p
+
+cd /etc/nginx/ssl
+
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout nginx.key -out nginx.crt
+
+Lab 15, Exercise 2
+
+sudo vim /etc/nginx/conf.d/ssl-params.conf
+
+ssl_certificate /etc/nginx/ssl/nginx.crt; 
+ssl_certificate_key /etc/nginx/ssl/nginx.key;
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ciphers "AES256+EECDH:AES256+EDH:!aNULL";
+ssl_prefer_server_ciphers on;
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+ssl_session_tickets off;
+add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+
+sudo vim /etc/nginx/conf.d/myServers.conf
+
+443 ssl
+
+server {
+    listen 80;
+    return 301 https://$host$request_uri;
+}
+
+sudo nginx -s reload
+
+curl -iILk http://localhost
+
